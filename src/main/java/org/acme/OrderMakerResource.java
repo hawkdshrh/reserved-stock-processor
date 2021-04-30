@@ -56,7 +56,7 @@ public class OrderMakerResource {
 
         /**
          * Example Payload:
-         * {"supplyCode":"restock","supplyUpdateEntries":[{"product":{"productName":"bananas","productSku":"1111-2222-3333-1115"},"quantity":254},{"product":{"productName":"cherries","productSku":"1111-2222-3333-1122"},"quantity":312}]}
+         * {"orderId":"103427","orderEntries":[{"product":{"productName":"peaches","productSku":"1111-2222-3333-1226"},"quantity":30},{"product":{"productName":"cherries","productSku":"1111-2222-3333-1122"},"quantity":30}],"orderCode":"5432-0000-1111-2160"}
          */
         if (order == null || order.getOrderEntries() == null || order.getOrderEntries().length <= 0) {
             LOGGER.log(Level.INFO, "Invalid order request.");
