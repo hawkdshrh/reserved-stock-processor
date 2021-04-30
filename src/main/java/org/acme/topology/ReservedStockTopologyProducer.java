@@ -1,4 +1,4 @@
-package org.acme.services;
+package org.acme.topology;
 
 import java.util.stream.Stream;
 
@@ -8,6 +8,7 @@ import javax.enterprise.inject.Produces;
 import io.quarkus.kafka.client.serialization.JsonbSerde;
 import org.acme.beans.Order;
 import org.acme.beans.Product;
+import org.acme.beans.Shipment;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -18,13 +19,14 @@ import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Produced;
 
 @ApplicationScoped
-public class ReservedStockService {
+public class ReservedStockTopologyProducer {
 
     public static final String ORDERS_TOPIC = "orders";
     public static final String SHIPMENTS_TOPIC = "shipments";
     public static final String RESERVED_STOCK_TOPIC = "reserved-stock";
 
     private final JsonbSerde<Order> orderSerde = new JsonbSerde<>(Order.class);
+    private final JsonbSerde<Shipment> shipmentSerde = new JsonbSerde<>(Shipment.class);
     private final JsonbSerde<Product> productSerde = new JsonbSerde<>(Product.class);
 
     @Produces
@@ -34,23 +36,29 @@ public class ReservedStockService {
         final KStream<String, Order> orders = builder.stream(
                 ORDERS_TOPIC,
                 Consumed.with(Serdes.String(), orderSerde));
-        final KStream<String, Order> shipments = builder.stream(
+        final KStream<String, Shipment> shipments = builder.stream(
                 SHIPMENTS_TOPIC,
-                Consumed.with(Serdes.String(), orderSerde));
+                Consumed.with(Serdes.String(), shipmentSerde));
 
-        final KeyValueMapper<String,Order,Iterable<KeyValue<Product,Integer>>> orderToProductQuantitiesMapping =
-            (orderId, order) -> 
-                () -> Stream.of(order.getOrderEntries())
-                    .map(e -> new KeyValue<Product,Integer>(e.getProduct(), e.getQuantity()))
-                    .iterator();
+        final KeyValueMapper<String, Order, Iterable<KeyValue<Product, Integer>>> orderToProductQuantitiesMapping
+                = (orderId, order)
+                -> () -> Stream.of(order.getOrderEntries())
+                        .map(e -> new KeyValue<Product, Integer>(e.getProduct(), e.getQuantity()))
+                        .iterator();
 
-        final KStream<Product,Integer> stockOrdered = orders.flatMap(orderToProductQuantitiesMapping);
-        final KStream<Product,Integer> stockShipped = shipments.flatMap(orderToProductQuantitiesMapping);
-        final KStream<Product,Integer> stockReserved = stockOrdered.merge(stockShipped.mapValues(q -> -q));
+                final KeyValueMapper<String, Shipment, Iterable<KeyValue<Product, Integer>>> shipmentToProductQuantitiesMapping
+                = (orderId, shipment)
+                -> () -> Stream.of(shipment.getShipmentLineEntries())
+                        .map(e -> new KeyValue<>(e.getProduct(), e.getQuantity()))
+                        .iterator();
+
+        final KStream<Product, Integer> stockOrdered = orders.flatMap(orderToProductQuantitiesMapping);
+        final KStream<Product, Integer> stockShipped = shipments.flatMap(shipmentToProductQuantitiesMapping);
+        final KStream<Product, Integer> stockReserved = stockOrdered.merge(stockShipped.mapValues(q -> -q));
 
         stockReserved.to(RESERVED_STOCK_TOPIC, Produced.with(productSerde, Serdes.Integer()));
-        
+
         return builder.build();
     }
-    
+
 }
