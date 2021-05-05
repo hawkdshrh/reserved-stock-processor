@@ -8,7 +8,7 @@ import javax.enterprise.inject.Produces;
 import io.quarkus.kafka.client.serialization.JsonbSerde;
 import org.acme.beans.Order;
 import org.acme.beans.Product;
-import org.acme.beans.Shipment;
+import org.acme.beans.Order;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -26,7 +26,7 @@ public class ReservedStockTopologyProducer {
     public static final String RESERVED_STOCK_TOPIC = "reserved-stock";
 
     private final JsonbSerde<Order> orderSerde = new JsonbSerde<>(Order.class);
-    private final JsonbSerde<Shipment> shipmentSerde = new JsonbSerde<>(Shipment.class);
+    private final JsonbSerde<Order> shipmentSerde = new JsonbSerde<>(Order.class);
     private final JsonbSerde<Product> productSerde = new JsonbSerde<>(Product.class);
 
     @Produces
@@ -36,7 +36,7 @@ public class ReservedStockTopologyProducer {
         final KStream<String, Order> orders = builder.stream(
                 ORDERS_TOPIC,
                 Consumed.with(Serdes.String(), orderSerde));
-        final KStream<String, Shipment> shipments = builder.stream(
+        final KStream<String, Order> shipments = builder.stream(
                 SHIPMENTS_TOPIC,
                 Consumed.with(Serdes.String(), shipmentSerde));
 
@@ -46,9 +46,9 @@ public class ReservedStockTopologyProducer {
                         .map(e -> new KeyValue<Product, Integer>(e.getProduct(), e.getQuantity()))
                         .iterator();
 
-                final KeyValueMapper<String, Shipment, Iterable<KeyValue<Product, Integer>>> shipmentToProductQuantitiesMapping
+                final KeyValueMapper<String, Order, Iterable<KeyValue<Product, Integer>>> shipmentToProductQuantitiesMapping
                 = (orderId, shipment)
-                -> () -> Stream.of(shipment.getShipmentLineEntries())
+                -> () -> Stream.of(shipment.getOrderEntries())
                         .map(e -> new KeyValue<>(e.getProduct(), e.getQuantity()))
                         .iterator();
 
