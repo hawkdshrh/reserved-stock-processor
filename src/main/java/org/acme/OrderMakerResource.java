@@ -27,18 +27,17 @@ public class OrderMakerResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("{sku}/{orderId}/{orderCode}")
-    public Boolean orderQuantity(@PathParam("sku") String sku, @PathParam("orderId") Long orderId, @PathParam("orderCode") String orderCode, OrderEntry entry) {
+    @Path("{sku}/{orderCode}")
+    public Boolean orderQuantity(@PathParam("sku") String sku, @PathParam("orderCode") String orderCode, OrderEntry entry) {
 
         /**
          * Example Payload:
          * {"product":{"productName":"bananas","productSku":"1111-2222-3333-1115"},"quantity":254}
          */
-        LOGGER.log(Level.INFO, "Updating order:{0} with {1] for {2} items.", new Object[]{orderId, entry.getProduct().getProductSku(), entry.getQuantity()});
+        LOGGER.log(Level.INFO, "Updating order:{0} with {1] for {2} items.", new Object[]{orderCode, entry.getProduct().getProductSku(), entry.getQuantity()});
         try {
             Order order = new Order();
             order.setOrderCode(orderCode);
-            order.setOrderId(orderId);
             order.setOrderEntries(new OrderEntry[]{entry});
             orderMakerService.orderStock(order);
         } catch (Throwable t) {
