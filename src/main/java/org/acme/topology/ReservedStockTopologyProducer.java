@@ -6,7 +6,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 
 import io.quarkus.kafka.client.serialization.JsonbSerde;
-import org.acme.beans.Order;
 import org.acme.beans.Product;
 import org.acme.beans.Order;
 import org.apache.kafka.common.serialization.Serdes;
