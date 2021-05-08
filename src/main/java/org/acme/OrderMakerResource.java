@@ -38,7 +38,6 @@ public class OrderMakerResource {
         try {
             Order order = new Order();
             order.setOrderCode(orderCode);
-            order.setOrderId(orderId);
             order.setOrderEntries(new OrderEntry[]{entry});
             orderMakerService.orderStock(order);
         } catch (Throwable t) {
